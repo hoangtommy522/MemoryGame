@@ -1,0 +1,106 @@
+# MemoryGameApp
+# Created by Tommy Hoang on 4/19/24.
+import tkinter as tk
+from tkinter import messagebox
+import random
+
+class MemoryGame:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Memory Game")
+
+        # List to hold buttons
+        self.buttons = []
+        # Variables to keep track of the first and second clicked buttons
+        self.first = None
+        self.second = None
+        # Variable to keep track of the number of matches
+        self.matches = 0
+        self.total_pairs = 26  # Total pairs in a 52-card deck
+
+        # Create a deck of cards with emojis and shuffle them
+        self.cards = self.create_deck()
+        random.shuffle(self.cards)
+        
+        # Create the grid of buttons and reset the game
+        self.create_widgets()
+        self.reset_game()
+    
+    def create_deck(self):
+        # Define suits and ranks
+        suits = ['♥', '♦', '♣', '♠']
+        ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+        # Create a deck with card text and color (red for hearts and diamonds, black for clubs and spades)
+        deck = [f"{rank}{suit}" for suit in suits for rank in ranks]
+        return deck
+
+    def create_widgets(self):
+        # Create a 8x7 grid of buttons (56 buttons)
+        for i in range(8):
+            row = []
+            for j in range(7):
+                button = tk.Button(self.master, width=10, height=5, command=lambda i=i, j=j: self.on_button_click(i, j))
+                button.grid(row=i, column=j)
+                row.append(button)
+            self.buttons.append(row)
+
+    def reset_game(self):
+        # Reset the game state
+        self.first = None
+        self.second = None
+        self.matches = 0
+        # Clear text and enable all buttons
+        for row in self.buttons:
+            for button in row:
+                button.config(text="", state=tk.NORMAL, fg='black')
+        # Reshuffle the deck
+        random.shuffle(self.cards)
+
+    def on_button_click(self, i, j):
+        # Do nothing if both first and second cards are already selected
+        if self.first and self.second:
+            return
+        # Do nothing if the button is already disabled
+        if self.buttons[i][j].cget('state') == tk.DISABLED:
+            return
+        
+        # Get the card index and its details (text and color)
+        card_index = i * 7 + j
+        card_text = self.cards[card_index]
+        card_color = 'red' if '♥' in card_text or '♦' in card_text else 'black'
+        # Set the button text to the card text and color
+        self.buttons[i][j].config(text=card_text, fg=card_color, state=tk.DISABLED)
+        
+        # If this is the first card clicked, store its position
+        if not self.first:
+            self.first = (i, j)
+        # If this is the second card clicked, store its position and check for a match after a delay
+        elif not self.second:
+            self.second = (i, j)
+            self.master.after(1000, self.check_match)
+
+    def check_match(self):
+        # Get the indices of the first and second cards
+        first_card_index = self.first[0] * 7 + self.first[1]
+        second_card_index = self.second[0] * 7 + self.second[1]
+        # Check if the two cards match
+        if self.cards[first_card_index] == self.cards[second_card_index]:
+            self.matches += 1
+            # If all pairs are matched, show a message and reset the game
+            if self.matches == self.total_pairs:
+                messagebox.showinfo("Memory Game", "You won!")
+                self.reset_game()
+        else:
+            # If the cards do not match, hide their text and re-enable them
+            self.buttons[self.first[0]][self.first[1]].config(text="", state=tk.NORMAL)
+            self.buttons[self.second[0]][self.second[1]].config(text="", state=tk.NORMAL)
+        
+        # Reset the first and second card positions
+        self.first = None
+        self.second = None
+
+if __name__ == "__main__":
+    # Create the main window and start the game
+    root = tk.Tk()
+    game = MemoryGame(root)
+    root.mainloop()
